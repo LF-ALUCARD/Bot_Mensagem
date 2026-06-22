@@ -1,0 +1,7 @@
+.env.prod
+.env
+main.ipynb
+__pycache__/
+**/__pycache__/
+*.pyc
+.git/
