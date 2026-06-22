@@ -20,7 +20,13 @@ class MensagemBot:
         self.relave_formatter = RelaveFormatter()
 
     def run_job(self):
-        timestamp = datetime.now().strftime("%d/%m %H:%M")
+        agora = datetime.now()
+        hora_atual = agora.hour
+        if not (3 <= hora_atual <= 22):
+            print(f"[{agora.strftime('%d/%m %H:%M')}] Fora do horário permitido. Pulando.")
+            return
+
+        timestamp = agora.strftime("%d/%m %H:%M")
         conn = self.db.get_connection()
 
         df = pd.read_sql_query(QUERY_PECA_HORA, conn)

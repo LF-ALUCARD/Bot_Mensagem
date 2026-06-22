@@ -1,0 +1,21 @@
+# 1. Copia os arquivos pro servidor (vai pedir senha)
+scp -r "C:\Users\Luiz Felipe\Documents\Dev\Py\Bot_Mensagem\bot" luiz@192.168.250.146:~/docker/bot_mensagem/
+scp "C:\Users\Luiz Felipe\Documents\Dev\Py\Bot_Mensagem\main.py" luiz@192.168.250.146:~/docker/bot_mensagem/
+scp "C:\Users\Luiz Felipe\Documents\Dev\Py\Bot_Mensagem\Dockerfile" luiz@192.168.250.146:~/docker/bot_mensagem/
+scp "C:\Users\Luiz Felipe\Documents\Dev\Py\Bot_Mensagem\requirements.txt" luiz@192.168.250.146:~/docker/bot_mensagem/
+
+ssh luiz@192.168.250.146
+
+cd ~/docker/bot_mensagem
+
+# 2. Builda a imagem
+docker build -t bot-mensagem .
+
+# 3. Para e remove o container antigo (se existir)
+docker rm -f bot-mensagem
+
+# 4. Sobe o novo
+docker run -d \
+  --name bot-mensagem \
+  --restart unless-stopped \
+  bot-mensagem
