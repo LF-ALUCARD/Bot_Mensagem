@@ -19,6 +19,18 @@ class EntregasFormatter:
             return "✅"
         return "-"
 
+    def _montar_secao(self, registros, titulo):
+        linhas = [titulo, ""]
+        for reg in registros:
+            status = self._emoji_status(reg[3])
+            cliente = self._fmt(reg[0])
+            sujo = self._fmt(reg[1])
+            limpo = self._fmt(reg[2])
+            linhas.append(f"{status} {cliente}")
+            linhas.append(f"P.Sujo:{sujo}kg P.Limpo:{limpo}kg")
+            linhas.append("")
+        return linhas
+
     def format(self, conn) -> str:
         cursor = conn.cursor()
 
@@ -40,7 +52,6 @@ class EntregasFormatter:
                 AND cex.enterdate::date = CURRENT_DATE
             ORDER BY status_entrega ASC;
         """)
-#                AND cex.closedate IS NULL
         registros_hoje = cursor.fetchall()
 
         cursor.execute("""
@@ -61,34 +72,17 @@ class EntregasFormatter:
                 AND cex.enterdate::date = (CURRENT_DATE + INTERVAL '1 day')
             ORDER BY status_entrega ASC;
         """)
-        #AND cex.closedate IS NULL
         registros_amanha = cursor.fetchall()
         cursor.close()
 
         hoje = datetime.now()
         amanha = hoje + timedelta(days=1)
 
-        linhas = []
-        linhas.append(f"DIA {hoje.strftime('%d')}")
+        linhas = ["```"]
+        linhas += self._montar_secao(registros_hoje, f"DIA {hoje.strftime('%d')}")
+        linhas.append("---")
         linhas.append("")
-        linhas.append("CLIENTE | SUJO | LIMPO | STATUS")
-        linhas.append("")
-        for reg in registros_hoje:
-            linhas.append(
-                f"{self._fmt(reg[0])}|{self._fmt(reg[1])}|{self._fmt(reg[2])}|{self._emoji_status(reg[3])}"
-            )
-
-        linhas.append("")
-        linhas.append("-" * 30)
-        linhas.append("")
-
-        linhas.append(f"DIA {amanha.strftime('%d')}")
-        linhas.append("")
-        linhas.append("CLIENTE | SUJO | LIMPO | STATUS")
-        linhas.append("")
-        for reg in registros_amanha:
-            linhas.append(
-                f"{self._fmt(reg[0])}|{self._fmt(reg[1])}|{self._fmt(reg[2])}|{self._emoji_status(reg[3])}"
-            )
+        linhas += self._montar_secao(registros_amanha, f"DIA {amanha.strftime('%d')}")
+        linhas.append("```")
 
         return "\n".join(linhas)

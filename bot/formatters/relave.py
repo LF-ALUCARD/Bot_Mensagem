@@ -21,6 +21,10 @@ class RelaveFormatter:
             return f"{float(dados):.2f}"
         return str(dados)
 
+    @staticmethod
+    def _alinhar(label, valor, largura_label):
+        return f"{label:<{largura_label}} | {valor} Kg"
+
     def format(self, conn) -> str:
         agora = datetime.now()
         hora_atual = agora.hour
@@ -48,17 +52,18 @@ class RelaveFormatter:
             WHERE ts >= %s AND ts < %s;
         """
 
-        linhas = ["RELAVE PLANTA H. A HORA"]
+        horas = list(range(self.HORA_INICIAL, hora_atual))
+        resultados = []
         sub_total = 0.0
 
-        for h in range(self.HORA_INICIAL, hora_atual):
+        for h in horas:
             inicio = agora.replace(hour=h, minute=0, second=0, microsecond=0)
             fim = inicio + timedelta(hours=1)
             cursor.execute(query_base, (inicio, fim))
             soma = cursor.fetchone()[0]
             if soma is not None:
                 sub_total += float(soma)
-            linhas.append(f"{h}h | {self._fmt1(soma)} Kg")
+            resultados.append((f"{h}h", self._fmt1(soma)))
 
         if hora_atual == 23 and 50 <= minuto_atual <= 59:
             inicio_23 = agora.replace(hour=23, minute=0, second=0, microsecond=0)
@@ -67,7 +72,7 @@ class RelaveFormatter:
             soma_23 = cursor.fetchone()[0]
             if soma_23 is not None:
                 sub_total += float(soma_23)
-            linhas.append(f"23h (até {minuto_atual:02d}m) | {self._fmt1(soma_23)} Kg")
+            resultados.append((f"23h (até {minuto_atual:02d}m)", self._fmt1(soma_23)))
 
         cursor.execute("""
             SELECT COALESCE(SUM("Peso Coleta"), 0) AS peso_coleta_hoje
@@ -80,9 +85,16 @@ class RelaveFormatter:
 
         porcento = (sub_total / coleta_val * 100) if coleta_val > 0 else 0.0
 
+        largura = max((len(label) for label, _ in resultados), default=3)
+
+        linhas = ["```", "RELAVE PLANTA H. A HORA\n"]
+        for label, valor in resultados:
+            linhas.append(self._alinhar(label, valor, largura))
+
         linhas.append("")
-        linhas.append(f"Total: {self._fmt1(sub_total)} Kg")
+        linhas.append(f"Total:          {self._fmt1(sub_total)} Kg")
         linhas.append(f"Total Coletado: {self._fmt1(coleta_val)} Kg")
-        linhas.append(f"% Relave: {self._fmt2(porcento)} %")
+        linhas.append(f"% Relave:       {self._fmt2(porcento)} %")
+        linhas.append("```")
 
         return "\n".join(linhas)

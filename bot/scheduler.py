@@ -19,6 +19,13 @@ class MensagemBot:
         self.entregas_formatter = EntregasFormatter()
         self.relave_formatter = RelaveFormatter()
 
+    def _enviar(self, grupo, msg, timestamp):
+        if msg:
+            r = self.sender.send(msg, grupo)
+            print(f"[{timestamp}] {grupo} — Status: {r.status_code}")
+        else:
+            print(f"[{timestamp}] {grupo} — Sem dados.")
+
     def run_job(self):
         agora = datetime.now()
         hora_atual = agora.hour
@@ -26,30 +33,20 @@ class MensagemBot:
             print(f"[{agora.strftime('%d/%m %H:%M')}] Fora do horário permitido. Pulando.")
             return
 
-        timestamp = agora.strftime("%d/%m %H:%M")
         conn = self.db.get_connection()
-
         df = pd.read_sql_query(QUERY_PECA_HORA, conn)
-        msg1 = self.pecas_formatter.format(df)
-        if msg1:
-            r1 = self.sender.send(msg1, "grupo_1")
-            print(f"[{timestamp}] grupo_1 — Status: {r1.status_code}")
-        else:
-            print(f"[{timestamp}] grupo_1 — Sem dados.")
 
-        msg2 = self.entregas_formatter.format(conn)
-        if msg2:
-            r2 = self.sender.send(msg2, "grupo_2")
-            print(f"[{timestamp}] grupo_2 — Status: {r2.status_code}")
-        else:
-            print(f"[{timestamp}] grupo_2 — Sem dados.")
+        msgs = [
+            ("grupo_1", self.pecas_formatter.format(df)),
+            ("grupo_2", self.entregas_formatter.format(conn)),
+            ("grupo_3", self.relave_formatter.format(conn)),
+        ]
 
-        msg3 = self.relave_formatter.format(conn)
-        if msg3:
-            r3 = self.sender.send(msg3, "grupo_3")
-            print(f"[{timestamp}] grupo_3 — Status: {r3.status_code}")
-        else:
-            print(f"[{timestamp}] grupo_3 — Sem dados.")
+        for i, (grupo, msg) in enumerate(msgs):
+            if i > 0:
+                time.sleep(15 * 60)
+            timestamp = datetime.now().strftime("%d/%m %H:%M")
+            self._enviar(grupo, msg, timestamp)
 
     def start(self):
         for hora in SCHEDULE_HORAS:
