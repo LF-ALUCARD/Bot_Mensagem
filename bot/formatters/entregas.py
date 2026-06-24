@@ -38,9 +38,9 @@ class EntregasFormatter:
             WHERE
                 cex.id IS NOT NULL
                 AND cex.enterdate::date = CURRENT_DATE
-                AND cex.closedate IS NULL
             ORDER BY status_entrega ASC;
         """)
+#                AND cex.closedate IS NULL
         registros_hoje = cursor.fetchall()
 
         cursor.execute("""
@@ -59,9 +59,9 @@ class EntregasFormatter:
             WHERE
                 cex.id IS NOT NULL
                 AND cex.enterdate::date = (CURRENT_DATE + INTERVAL '1 day')
-                AND cex.closedate IS NULL
             ORDER BY status_entrega ASC;
         """)
+        #AND cex.closedate IS NULL
         registros_amanha = cursor.fetchall()
         cursor.close()
 
@@ -75,7 +75,7 @@ class EntregasFormatter:
         linhas.append("")
         for reg in registros_hoje:
             linhas.append(
-                f"{self._fmt(reg[0])} | {self._fmt(reg[1])} | {self._fmt(reg[2])} | {self._emoji_status(reg[3])}"
+                f"{self._fmt(reg[0])}|{self._fmt(reg[1])}|{self._fmt(reg[2])}|{self._emoji_status(reg[3])}"
             )
 
         linhas.append("")
@@ -88,7 +88,7 @@ class EntregasFormatter:
         linhas.append("")
         for reg in registros_amanha:
             linhas.append(
-                f"{self._fmt(reg[0])} | {self._fmt(reg[1])} | {self._fmt(reg[2])} | {self._emoji_status(reg[3])}"
+                f"{self._fmt(reg[0])}|{self._fmt(reg[1])}|{self._fmt(reg[2])}|{self._emoji_status(reg[3])}"
             )
 
         return "\n".join(linhas)
