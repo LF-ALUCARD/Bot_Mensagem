@@ -26,6 +26,7 @@ class RelaveFormatter:
         return f"{label:<{largura_label}} | {valor} Kg"
 
     def format(self, conn) -> str:
+        conn.commit()  # garante nova transação com data atual
         agora = datetime.now()
         hora_atual = agora.hour
         minuto_atual = agora.minute
@@ -77,8 +78,8 @@ class RelaveFormatter:
         cursor.execute("""
             SELECT COALESCE(SUM("Peso Coleta"), 0) AS peso_coleta_hoje
             FROM analytics.peso_diario_coleta_entrega_por_carrinho
-            WHERE TO_DATE(TRIM("Data"), 'DD/MM/YYYY') = CURRENT_DATE;
-        """)
+            WHERE TO_DATE(TRIM("Data"), 'DD/MM/YYYY') = %s;
+        """, (agora.date(),))
         coleta_row = cursor.fetchone()
         coleta_val = float(coleta_row[0]) if coleta_row and coleta_row[0] is not None else 0.0
         cursor.close()

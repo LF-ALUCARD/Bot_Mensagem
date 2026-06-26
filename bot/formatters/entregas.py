@@ -18,6 +18,17 @@ class EntregasFormatter:
         elif entrega == "FECHADA":
             return "✅"
         return "-"
+    
+    @staticmethod
+    def _peso_porcento(sujo, limpo) -> str:
+        if sujo is None or limpo is None or float(sujo) == 0:
+            return "- %"
+        pct = (float(limpo) * 100) / float(sujo)
+        if pct >= 94:
+            return f'{pct:.2f}% 🟠'
+        elif pct >= 87:
+            return f'{pct:.2f}% 🟢'
+        return f'{pct:.2f}% 🔴'
 
     def _montar_secao(self, registros, titulo):
         linhas = [titulo, ""]
@@ -26,12 +37,18 @@ class EntregasFormatter:
             cliente = self._fmt(reg[0])
             sujo = self._fmt(reg[1])
             limpo = self._fmt(reg[2])
+            porcento = self._peso_porcento(reg[1], reg[2])
             linhas.append(f"{status} {cliente}")
             linhas.append(f"P.Sujo:{sujo}kg P.Limpo:{limpo}kg")
+            linhas.append(f'Porcentagem: {porcento}')
             linhas.append("")
         return linhas
 
     def format(self, conn) -> str:
+        conn.commit()  # garante nova transação com data atual
+        hoje = datetime.now()
+        amanha = hoje + timedelta(days=1)
+
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -49,9 +66,9 @@ class EntregasFormatter:
             JOIN client c ON c.id = cee.client_id
             WHERE
                 cex.id IS NOT NULL
-                AND cex.enterdate::date = CURRENT_DATE
+                AND cex.enterdate::date = %s
             ORDER BY status_entrega ASC;
-        """)
+        """, (hoje.date(),))
         registros_hoje = cursor.fetchall()
 
         cursor.execute("""
@@ -69,14 +86,11 @@ class EntregasFormatter:
             JOIN client c ON c.id = cee.client_id
             WHERE
                 cex.id IS NOT NULL
-                AND cex.enterdate::date = (CURRENT_DATE + INTERVAL '1 day')
+                AND cex.enterdate::date = %s
             ORDER BY status_entrega ASC;
-        """)
+        """, (amanha.date(),))
         registros_amanha = cursor.fetchall()
         cursor.close()
-
-        hoje = datetime.now()
-        amanha = hoje + timedelta(days=1)
 
         linhas = ["```"]
         linhas += self._montar_secao(registros_hoje, f"DIA {hoje.strftime('%d')}")

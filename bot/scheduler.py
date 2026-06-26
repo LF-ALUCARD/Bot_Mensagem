@@ -39,8 +39,10 @@ class MensagemBot:
         msgs = [
             ("grupo_1", self.pecas_formatter.format(df)),
             ("grupo_2", self.entregas_formatter.format(conn)),
-            ("grupo_3", self.relave_formatter.format(conn)),
         ]
+
+        if hora_atual >= 7:
+            msgs.append(("grupo_3", self.relave_formatter.format(conn)))
 
         for i, (grupo, msg) in enumerate(msgs):
             if i > 0:
